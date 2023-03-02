@@ -4,11 +4,12 @@ import fr.uga.l3miage.data.domain.Author;
 import fr.uga.l3miage.library.books.BookDTO;
 import fr.uga.l3miage.library.books.BooksMapper;
 import fr.uga.l3miage.library.service.AuthorService;
+import fr.uga.l3miage.library.service.EntityNotFoundException;
+
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -31,22 +32,29 @@ public class AuthorsController {
     @GetMapping("/authors")
     public Collection<AuthorDTO> authors(@RequestParam(value = "q", required = false) String query) {
         Collection<Author> authors;
-        if (query == null) {
+        if (query == null) { // si aucun paramètre de requête (nom)
             authors = authorService.list();
-        } else {
+        } else { // recherche l'auteur selon son nom
             authors = authorService.searchByName(query);
         }
-        return authors.stream()
-                .map(authorMapper::entityToDTO)
-                .toList();
+        return authors.stream() // transforme la collection en un flux de données
+                .map(authorMapper::entityToDTO) // crée un tableau d'entityToDTO
+                .toList(); // collecte tous les éléments du flux dans une nouvelle liste
     }
 
-    public AuthorDTO author(Long id) {
-        return null;
+   @GetMapping("/authors/{id}")
+    public AuthorDTO author(Long id) throws EntityNotFoundException {
+        // ...
+       return null;
     }
 
-    public AuthorDTO newAuthor(AuthorDTO author) {
-        return null;
+    // fonctionnelle (manque le fait de gérer un doublon)
+    @PostMapping("/authors")
+    @ResponseStatus(HttpStatus.CREATED)
+    public AuthorDTO newAuthor(@Valid @RequestBody AuthorDTO authorDTO) {
+        Author newAuthor = authorMapper.dtoToEntity(authorDTO);
+        Author savedAuthor = authorService.save(newAuthor);
+        return authorMapper.entityToDTO(savedAuthor);
     }
 
     public AuthorDTO updateAuthor(AuthorDTO author, Long id) {
