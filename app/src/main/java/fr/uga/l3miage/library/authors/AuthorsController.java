@@ -4,6 +4,7 @@ import fr.uga.l3miage.data.domain.Author;
 import fr.uga.l3miage.library.books.BookDTO;
 import fr.uga.l3miage.library.books.BooksMapper;
 import fr.uga.l3miage.library.service.AuthorService;
+import fr.uga.l3miage.library.service.DeleteAuthorException;
 import fr.uga.l3miage.library.service.EntityNotFoundException;
 
 import fr.uga.l3miage.library.service.base.BaseService;
@@ -11,6 +12,7 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -46,10 +48,16 @@ public class AuthorsController {
                 .toList(); // collecte tous les éléments du flux dans une nouvelle liste
     }
 
-    // push Lyna (valided)
-   @GetMapping("/authors/{id}")
-   public AuthorDTO author(@PathVariable("id") Long id) throws EntityNotFoundException {
-        return null;
+    //Get author (fonctionelle)
+    @GetMapping("/authors/{id}")
+    public AuthorDTO author(@PathVariable("id") Long id) throws EntityNotFoundException {
+        try {
+            Author author = authorService.get(id);
+            return authorMapper.entityToDTO(author);
+        }
+        catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
     }
 
     // valided
@@ -78,8 +86,16 @@ public class AuthorsController {
         }
     }
 
-    public void deleteAuthor(Long id) {
-        // unimplemented... yet!
+    @DeleteMapping("authors/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteAuthor(@PathVariable("id") Long id) throws DeleteAuthorException, EntityNotFoundException {
+        try {
+            authorService.delete(id);
+        } catch (DeleteAuthorException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST);
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
     }
 
     public Collection<BookDTO> books(Long authorId) {
