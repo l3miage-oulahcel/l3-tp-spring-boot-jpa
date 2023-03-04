@@ -8,6 +8,9 @@ import fr.uga.l3miage.library.service.EntityNotFoundException;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -64,19 +67,34 @@ public class BooksController {
         }
     }
 
-    // todo
-    public BookDTO updateBook(Long authorId, BookDTO book) {
-        // attention BookDTO.id() doit être égale à id, sinon la requête utilisateur est mauvaise
-        return null;
+
+    @PutMapping("/api/books/{id}")
+    public BookDTO updateBook(@PathVariable("id") Long authorId, @Valid @RequestBody BookDTO book) throws EntityNotFoundException{
+        // modifie le livre si existant
+        try {
+            Book updated = bookService.update(booksMapper.dtoToEntity(book));
+            return booksMapper.entityToDTO(updated);
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
+    }
+
+    //Delete book (fonctionnelle)
+    @DeleteMapping("/api/books/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteBook(@PathVariable("id") Long id) throws EntityNotFoundException {
+        try {
+            bookService.delete(id);
+        }catch (EntityNotFoundException e){
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
+
     }
 
     // todo
-    public void deleteBook(Long id) {
-
-    }
-
-    // todo
-    public void addAuthor(Long authorId, AuthorDTO author) {
+    //@PutMapping("/api/books/{id}")
+    public void addAuthor(Long authorId, AuthorDTO author) throws EntityNotFoundException{
 
     }
 }
