@@ -4,11 +4,13 @@ import fr.uga.l3miage.data.domain.Author;
 import fr.uga.l3miage.data.domain.Book;
 import fr.uga.l3miage.library.authors.AuthorDTO;
 import fr.uga.l3miage.library.service.BookService;
+import fr.uga.l3miage.library.service.EntityNotFoundException;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collection;
 
@@ -39,16 +41,27 @@ public class BooksController {
                 .toList(); // collecte tous les éléments du flux dans une nouvelle liste
     }
 
-    // todo
-    public BookDTO book(Long id) {
-
-        return null;
+    // à valider
+    @GetMapping("/books/{id}")
+    public BookDTO book(@PathVariable("id") Long id) throws EntityNotFoundException {
+        try {
+            Book book = bookService.get(id);
+            return booksMapper.entityToDTO(book);
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
     }
 
-    //todo
-    public BookDTO newBook(Long authorId, BookDTO book) {
-
-        return null;
+    @PostMapping("/authors/{id}/books")
+    @ResponseStatus(HttpStatus.CREATED)
+    public BookDTO newBook(@PathVariable("id") Long authorId, @Valid @RequestBody BookDTO book) {
+        try {
+            Book newBook = booksMapper.dtoToEntity(book);
+            Book saved = bookService.save(authorId, newBook);
+            return booksMapper.entityToDTO(saved);
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
     }
 
     // todo
