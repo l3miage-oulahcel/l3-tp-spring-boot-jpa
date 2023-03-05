@@ -3,6 +3,7 @@ package fr.uga.l3miage.library.books;
 import fr.uga.l3miage.data.domain.Author;
 import fr.uga.l3miage.data.domain.Book;
 import fr.uga.l3miage.library.authors.AuthorDTO;
+import fr.uga.l3miage.library.service.AuthorService;
 import fr.uga.l3miage.library.service.BookService;
 import fr.uga.l3miage.library.service.EntityNotFoundException;
 import jakarta.validation.Valid;
@@ -27,7 +28,7 @@ public class BooksController {
     @Autowired
     public BooksController(BookService bookService, BooksMapper booksMapper) {
        this.bookService = bookService;
-        this.booksMapper = booksMapper;
+       this.booksMapper = booksMapper;
     }
 
     // valided
@@ -44,7 +45,7 @@ public class BooksController {
                 .toList(); // collecte tous les éléments du flux dans une nouvelle liste
     }
 
-    // à valider
+    // valided
     @GetMapping("/books/{id}")
     public BookDTO book(@PathVariable("id") Long id) throws EntityNotFoundException {
         try {
@@ -55,9 +56,35 @@ public class BooksController {
         }
     }
 
+    // Ajout de cette méthode pour avoir tous les livres d'un auteur
+    @GetMapping("/authors/{id}/books")
+    public Collection<BookDTO> booksAuthor(@PathVariable("id") Long id, @RequestParam(value = "q", required = false) String query) throws EntityNotFoundException {
+        Collection<Book> books;
+        if (query == null) { // si aucun paramètre de requête (titre)
+            try {
+                books = bookService.getByAuthor(id);
+                return books.stream() // transforme la collection en un flux de données
+                        .map(booksMapper::entityToDTO) // crée un tableau d'entityToDTO
+                        .toList(); // collecte tous les éléments du flux dans une nouvelle liste
+            } catch (EntityNotFoundException e) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+            }
+        } else { // recherche avec un filtre
+            try {
+                books = bookService.findByAuthor(id, query);
+                return books.stream() // transforme la collection en un flux de données
+                        .map(booksMapper::entityToDTO) // crée un tableau d'entityToDTO
+                        .toList(); // collecte tous les éléments du flux dans une nouvelle liste
+            } catch (EntityNotFoundException e) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+            }
+        }
+    }
+
+    // valided
     @PostMapping("/authors/{id}/books")
     @ResponseStatus(HttpStatus.CREATED)
-    public BookDTO newBook(@PathVariable("id") Long authorId, @Valid @RequestBody BookDTO book) {
+    public BookDTO newBook(@PathVariable("id") Long authorId, @Valid @RequestBody BookDTO book) throws EntityNotFoundException {
         try {
             Book newBook = booksMapper.dtoToEntity(book);
             Book saved = bookService.save(authorId, newBook);
@@ -67,9 +94,9 @@ public class BooksController {
         }
     }
 
-
-    @PutMapping("/api/books/{id}")
-    public BookDTO updateBook(@PathVariable("id") Long authorId, @Valid @RequestBody BookDTO book) throws EntityNotFoundException{
+    // probleme : auteur null
+    @PutMapping("/books/{id}")
+    public BookDTO updateBook(@PathVariable("id") Long authorId, @RequestBody BookDTO book) throws EntityNotFoundException {
         // modifie le livre si existant
         try {
             Book updated = bookService.update(booksMapper.dtoToEntity(book));
@@ -77,11 +104,10 @@ public class BooksController {
         } catch (EntityNotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND);
         }
-
     }
 
-    //Delete book (fonctionnelle)
-    @DeleteMapping("/api/books/{id}")
+    // valided
+    @DeleteMapping("/books/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteBook(@PathVariable("id") Long id) throws EntityNotFoundException {
         try {
@@ -92,9 +118,13 @@ public class BooksController {
 
     }
 
-    // todo
-    //@PutMapping("/api/books/{id}")
-    public void addAuthor(Long authorId, AuthorDTO author) throws EntityNotFoundException{
-
+    // valided (mais bug dans test)
+    @PutMapping("/books/{id}/authors")
+    public void addAuthor(@PathVariable("id") Long bookId, @Valid @RequestBody AuthorDTO authorDTO) throws EntityNotFoundException{
+        try {
+            Book updated = bookService.addAuthor(bookId, authorDTO.id());
+        } catch (EntityNotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND);
+        }
     }
 }
